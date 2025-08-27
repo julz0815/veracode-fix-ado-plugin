@@ -1,6 +1,6 @@
 {
   "name": "veracode-fix-annotations",
-  "version": "1.0.159",
+  "version": "1.0.160",
   "description": "Azure DevOps extension for Veracode Fix API integration",
   "scripts": {
     "build-service": "tsc --project tsconfig.service.json",
