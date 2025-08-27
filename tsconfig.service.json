@@ -1,14 +1,13 @@
 {
     "compilerOptions": {
-        "target": "es2015",
-        "module": "es2015",
-        "lib": ["dom", "es2015", "es2016", "es2017"],
-        "jsx": "react",
+        "target": "es2019",
+        "module": "commonjs",
+        "lib": ["es2019"],
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "outDir": "dist",
+        "outDir": "tasks/veracode-fix",
         "moduleResolution": "node",
         "removeComments": true,
         "noImplicitAny": true,
@@ -24,14 +23,8 @@
         "experimentalDecorators": true,
         "resolveJsonModule": true,
         "baseUrl": ".",
-        "paths": {
-            "azure-devops-ui/*": ["node_modules/azure-devops-ui/lib/*"],
-            "react": ["./node_modules/react"],
-            "react-dom": ["./node_modules/react-dom"]
-        },
-        "types": ["node", "react", "react-dom"],
-        "sourceMap": true
+        "types": ["node"]
     },
-    "exclude": ["node_modules", "tasks/**/*"],
-    "include": ["src/pr-tab/**/*", "src/pipeline-tab/**/*"]
+    "exclude": ["node_modules", "dist/**/*", "src/pr-tab/**/*", "src/pipeline-tab/**/*"],
+    "include": ["src/**/*"]
 } 

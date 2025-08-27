@@ -1,0 +1,151 @@
+{
+    "manifestVersion": 1,
+    "id": "veracode-fix-annotations",
+    "name": "Veracode Fix Annotations",
+    "version": "1.0.159",
+    "publisher": "JulianTotzek-Hallhuber",
+    "targets": [
+        {
+            "id": "Microsoft.VisualStudio.Services"
+        }
+    ],
+    "description": "Azure DevOps extension for Veracode Fix API integration",
+    "categories": [
+        "Azure Pipelines"
+    ],
+    "icons": {
+        "default": "images/VC_logo.png"
+    },
+    "content": {
+        "details": {
+            "path": "overview.md"
+        },
+        "license": {
+            "path": "LICENSE"
+        }
+    },
+    "files": [
+        {
+            "path": "dist",
+            "addressable": true
+        },
+        {
+            "path": "images",
+            "addressable": true
+        },
+        {
+            "path": "tasks"
+        },
+        {
+            "path": "tasks/veracode-fix/node_modules"
+        }
+    ],
+    "contributions": [
+        {
+            "id": "veracode-fix-hub",
+            "type": "ms.vss-web.hub",
+            "targets": [
+                "ms.vss-web.project-admin-hub-group"
+            ],
+            "properties": {
+                "name": "Veracode Fix",
+                "uri": "dist/index.html",
+                "icon": "images/VC_logo.png"
+            }
+        },
+        {
+            "id": "veracode-fix-task",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name": "tasks/veracode-fix"
+            }
+        },
+        {
+            "id": "veracode-fix-pr-tab",
+            "type": "ms.vss-web.tab",
+            "targets": [
+                "ms.vss-code-web.pr-tabs"
+            ],
+            "properties": {
+                "name": "Veracode Fix",
+                "uri": "dist/veracode-fix-pr-tab.html",
+                "order": 100
+            }
+        },
+        {
+            "id": "veracode-fix-pipeline-tab",
+            "type": "ms.vss-build-web.build-results-tab",
+            "description": "A tab contributing to build results view for Veracode Fix suggestions",
+            "targets": [
+                "ms.vss-build-web.build-results-view"
+            ],
+            "properties": {
+                "name": "Veracode Fix",
+                "uri": "dist/veracode-fix-pipeline-tab.html"
+            }
+        }
+    ],
+    "scopes": [
+        "vso.code",
+        "vso.code_write",
+        "vso.build",
+        "vso.project",
+        "vso.build_execute"
+    ],
+    "configuration": {
+        "properties": {
+            "veracodeCredentials": {
+                "type": "object",
+                "properties": {
+                    "vid": {
+                        "type": "string",
+                        "description": "Veracode API ID"
+                    },
+                    "vkey": {
+                        "type": "string",
+                        "description": "Veracode API Key",
+                        "isSecret": true
+                    }
+                },
+                "required": [
+                    "vid",
+                    "vkey"
+                ]
+            },
+            "fixOptions": {
+                "type": "object",
+                "properties": {
+                    "fixType": {
+                        "type": "string",
+                        "enum": [
+                            "single",
+                            "batch"
+                        ],
+                        "description": "Type of fix to apply (single or batch)",
+                        "default": "single"
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Programming language of the code to fix"
+                    },
+                    "createPR": {
+                        "type": "boolean",
+                        "description": "Whether to create a pull request with the fixes",
+                        "default": true
+                    },
+                    "prComment": {
+                        "type": "string",
+                        "description": "Comment to add to the pull request"
+                    },
+                    "sourceBasePath": {
+                        "type": "string",
+                        "description": "Base path to the source code"
+                    }
+                }
+            }
+        }
+    }
+}

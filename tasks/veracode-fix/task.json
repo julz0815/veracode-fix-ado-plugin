@@ -1,0 +1,82 @@
+{
+    "id": "a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d",
+    "name": "VeracodeFix",
+    "friendlyName": "Veracode Fix",
+    "description": "Apply Veracode Fix API suggestions to your code",
+    "helpMarkDown": "[More Information](https://docs.veracode.com/r/c_fix_api)",
+    "category": "Build",
+    "author": "JulianTotzek-Hallhuber",
+    "version": {
+        "Major": 1,
+        "Minor": 0,
+        "Patch": 0
+    },
+    "instanceNameFormat": "Apply Veracode Fix",
+    "inputs": [
+        {
+            "name": "veracodeApiId",
+            "type": "string",
+            "label": "Veracode API ID",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "Your Veracode API ID"
+        },
+        {
+            "name": "veracodeApiKey",
+            "type": "string",
+            "label": "Veracode API Key",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "Your Veracode API Key",
+            "isSecret": true
+        },
+        // fixType parameter removed - now hardcoded to 'batch' in task.js
+        {
+            "name": "language",
+            "type": "string",
+            "label": "Programming Language",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "Programming language of the code to fix (e.g., java, python, javascript)"
+        },
+        {
+            "name": "inputFile",
+            "type": "string",
+            "label": "Results JSON File",
+            "defaultValue": "results.json",
+            "required": true,
+            "helpMarkDown": "Path to the results.json file containing flaws to fix"
+        },
+        // files parameter removed - now hardcoded to 'all' in task.js
+        {
+            "name": "CWEs",
+            "type": "string",
+            "label": "List of CWEs",
+            "defaultValue": "",
+            "required": false,
+            "helpMarkDown": "Comma separated list of CWEs to fix"
+        },
+        // createPR parameter removed - not used in current code
+        {
+            "name": "prComment",
+            "type": "boolean",
+            "label": "Pull Request Comment",
+            "defaultValue": false,
+            "required": false,
+            "helpMarkDown": "Add a comment to the pull request"
+        },
+        {
+            "name": "DEBUG",
+            "type": "boolean",
+            "label": "Enable Debug Logging",
+            "defaultValue": false,
+            "required": false,
+            "helpMarkDown": "Enable verbose debug output for troubleshooting"
+        }
+    ],
+    "execution": {
+        "Node16": {
+            "target": "task.js"
+        }
+    }
+} 

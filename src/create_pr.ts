@@ -1,5 +1,4 @@
-import { Octokit } from "@octokit/rest";
-import * as github from '@actions/github'
+/*
 import * as Diff from 'diff';
 import * as fs from 'fs-extra';
 
@@ -10,8 +9,8 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
     const repo = repository.split("/");
     const owner = repo[0]
     const repoName = repo[1]
-    const context = github.context
-    const prID:any = context.payload.pull_request?.number
+    //const context = github.context
+    //const prID:any = context.payload.pull_request?.number
     let baseRef:any = ''
     if ( process.env.GITHUB_EVENT_NAME == 'pull_request' ){
         baseRef = process.env.GITHUB_HEAD_REF
@@ -29,8 +28,8 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         console.log('Owner: '+owner)
         console.log('Repo: '+repoName)
         console.log('Context: ')
-        console.log(context)
-        console.log('PR ID: '+prID)
+        //console.log(context)
+        //console.log('PR ID: '+prID)
         console.log('Base Ref: '+baseRef)
         console.log('Base SHA: '+baseSha)
         console.log('#######- DEBUG MODE -#######')
@@ -202,4 +201,6 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         console.log(createPR)
         console.log('#######- DEBUG MODE -#######')
     }
+
 }
+*/

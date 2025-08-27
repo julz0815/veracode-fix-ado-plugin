@@ -181,4 +181,5 @@ export async function checkCWE(flawInfo:any, options:any) {
             return false
         }
     }
+    return false; 
 }

@@ -1,47 +1,23 @@
-import fs from 'fs';
-import path from 'path';
-import { createFlawInfo } from './createFlawInfo';
-import { checkCWE } from './check_cwe_support';
-import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } from './requests';
-//import { createPRCommentBatch } from './create_pr_comment'
-import { execSync } from 'child_process';
-import { rewritePath } from './rewritePath';
-//import { createPR } from './create_pr'
-
-interface FlawInfo {
-    resultsFile: string;
-    issuedID: string;
-    cweID: number;
-    language: string;
-    sourceFile: string;
-}
-
-interface Options {
-    file: string;
-    isPR: string;
-    DEBUG?: boolean;
-    files: string;
-    cwe: string;
-    language: string;
-    source_base_path_1?: string;
-    source_base_path_2?: string;
-    source_base_path_3?: string;
-}
-
-interface Credentials {
-    apiId: string;
-    apiKey: string;
-}
-
-export async function runBatch(options: Options, credentials: Credentials): Promise<void> {
-    //read json file
-    const jsonRead = fs.readFileSync(options.file, 'utf8');
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.runBatch = void 0;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const createFlawInfo_1 = require("./createFlawInfo");
+const check_cwe_support_1 = require("./check_cwe_support");
+const requests_1 = require("./requests");
+const child_process_1 = require("child_process");
+const rewritePath_1 = require("./rewritePath");
+async function runBatch(options, credentials) {
+    const jsonRead = fs_1.default.readFileSync(options.file, 'utf8');
     const jsonData = JSON.parse(jsonRead);
     const jsonFindings = jsonData.findings;
     const flawCount = jsonFindings.length;
     console.log(`Number of flaws: ${flawCount}`);
-
-    let filesPartOfPR: Array<{ filename: string }> = [];
+    let filesPartOfPR = [];
     if (options.isPR === 'true') {
         if (options.DEBUG) {
             console.log('#######- DEBUG MODE -#######');
@@ -49,7 +25,7 @@ export async function runBatch(options: Options, credentials: Credentials): Prom
             console.log('Fetching files part of the PR');
             console.log('#######- DEBUG MODE -#######');
         }
-        filesPartOfPR = await getFilesPartOfPR(options);
+        filesPartOfPR = await (0, requests_1.getFilesPartOfPR)(options);
         if (options.DEBUG) {
             console.log('#######- DEBUG MODE -#######');
             console.log('run_batch.ts - runBatch()');
@@ -58,49 +34,35 @@ export async function runBatch(options: Options, credentials: Credentials): Prom
             console.log('#######- DEBUG MODE -#######');
         }
     }
-
-    //loop through json file and create a new array
-    const flawArray: Record<string, any[]> = {};
+    const flawArray = {};
     for (let i = 0; i < flawCount; i++) {
-        //create a new array per source file
         const sourceFile = jsonFindings[i].files.source_file.file;
-
         if (!flawArray[sourceFile]) {
             flawArray[sourceFile] = [];
         }
         flawArray[sourceFile].push(jsonFindings[i]);
     }
-
-    //loop through the new array per source file and find fixable flaws, supported CWE's and CWE's to be fixed
     const sourceFiles = Object.keys(flawArray);
     const sourceFilesCount = sourceFiles.length;
     console.log(`Number of source files with flaws: ${sourceFilesCount}`);
-    
     for (let i = 0; i < sourceFilesCount; i++) {
         console.log('#############################\n\n');
-
         const sourceFile = sourceFiles[i];
         console.log('Source file with flaws:', sourceFile);
-
         const flawCount = flawArray[sourceFile].length;
         console.log(`Number of flaws for ${sourceFile}: ${flawCount}`);
-
         for (let j = 0; j < flawCount; j++) {
-            const initialFlawInfo: FlawInfo = {
+            const initialFlawInfo = {
                 resultsFile: options.file,
                 issuedID: flawArray[sourceFile][j].issue_id,
                 cweID: parseInt(flawArray[sourceFile][j].cwe_id),
                 language: options.language,
                 sourceFile: sourceFile,
             };
-
             let include = 0;
             if (options.files === 'changed') {
                 console.log('Checking if file is part of PR');
-                //sourceFile needs rewrite before checking if its part of the PR
-
-                const filepath = await rewritePath(options, sourceFile);
-
+                const filepath = await (0, rewritePath_1.rewritePath)(options, sourceFile);
                 if (options.isPR !== '') {
                     for (const file of filesPartOfPR) {
                         if (file.filename === filepath) {
@@ -108,125 +70,108 @@ export async function runBatch(options: Options, credentials: Credentials): Prom
                             break;
                         }
                     }
-                } else {
+                }
+                else {
                     console.log('Not a PR, all files should be fixed');
                     include = 1;
                 }
             }
-
             if (include === 0 && options.files === 'changed') {
                 console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"');
-            } else {
+            }
+            else {
                 console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed');
-
                 if (options.cwe !== '') {
                     console.log(`Fix only for CWE: ${options.cwe}`);
-
-                    //get CWE list input
                     const cweList = options.cwe.includes(',') ? options.cwe.split(',') : [options.cwe];
-
                     if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
                         console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is in the list of CWEs to fix, creating flaw info`);
-
                         if (options.DEBUG) {
                             console.log('#######- DEBUG MODE -#######');
                             console.log('run_batch.ts - runBatch() - before checkCWE');
                             console.log('Flaw Info:', initialFlawInfo);
                             console.log('#######- DEBUG MODE -#######');
                         }
-
-                        if (await checkCWE(initialFlawInfo, options) === true) {
-                            const flawInfo = await createFlawInfo(initialFlawInfo, options);
-
+                        if (await (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options) === true) {
+                            const flawInfo = await (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                             if (options.DEBUG) {
                                 console.log('#######- DEBUG MODE -#######');
                                 console.log('run_batch.ts - runBatch() - after checkCWE and after createFlawInfo');
                                 console.log('Flaw Info:', flawInfo);
                                 console.log('#######- DEBUG MODE -#######');
                             }
-
-                            //write flaw info and source file
                             const flawFoldername = `cwe-${flawInfo.CWEId}-line-${flawInfo.line}-issue-${flawInfo.issueId}`;
                             const flawFilename = `flaw_${flawInfo.issueId}.json`;
                             console.log(`Writing flaw to: app/flaws/${flawFoldername}/${flawFilename}`);
-                            fs.mkdirSync(`app/flaws/${flawFoldername}`, { recursive: true });
-                            fs.writeFileSync(`app/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
-
-                            if (fs.existsSync(`app/${flawInfo.sourceFile}`)) {
+                            fs_1.default.mkdirSync(`app/flaws/${flawFoldername}`, { recursive: true });
+                            fs_1.default.writeFileSync(`app/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
+                            if (fs_1.default.existsSync(`app/${flawInfo.sourceFile}`)) {
                                 console.log('File exists nothing to do');
-                            } else {
+                            }
+                            else {
                                 console.log('File does not exist, copying file');
                                 const str = flawInfo.sourceFile;
                                 const lastSlashIndex = str.lastIndexOf('/');
                                 const strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                if (!fs.existsSync(`app/${strBeforeLastSlash}`)) {
+                                if (!fs_1.default.existsSync(`app/${strBeforeLastSlash}`)) {
                                     console.log('Destination directory does not exist let\'s create it');
-                                    fs.mkdirSync(`app/${strBeforeLastSlash}`, { recursive: true });
+                                    fs_1.default.mkdirSync(`app/${strBeforeLastSlash}`, { recursive: true });
                                 }
-
-                                fs.copyFileSync(flawInfo.sourceFile, `app/${flawInfo.sourceFile}`);
+                                fs_1.default.copyFileSync(flawInfo.sourceFile, `app/${flawInfo.sourceFile}`);
                             }
-                        } else {
+                        }
+                        else {
                             console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not supported for ${options.language}`);
                         }
-                    } else {
+                    }
+                    else {
                         console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not in the list of CWEs to fix`);
                     }
-                } else {
+                }
+                else {
                     console.log('Fix for all CWEs');
-
-                    if (await checkCWE(initialFlawInfo, options) === true) {
-                        const flawInfo = await createFlawInfo(initialFlawInfo, options);
-
-                        //write flaw info and source file
+                    if (await (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options) === true) {
+                        const flawInfo = await (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                         const flawFoldername = `cwe-${flawInfo.CWEId}-line-${flawInfo.line}-issue-${flawInfo.issueId}`;
                         const flawFilename = `flaw_${flawInfo.issueId}.json`;
                         console.log(`Writing flaw to: app/flaws/${flawFoldername}/${flawFilename}`);
-                        fs.mkdirSync(`app/flaws/${flawFoldername}`, { recursive: true });
-                        fs.writeFileSync(`app/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
-
-                        if (fs.existsSync(`app/${flawInfo.sourceFile}`)) {
+                        fs_1.default.mkdirSync(`app/flaws/${flawFoldername}`, { recursive: true });
+                        fs_1.default.writeFileSync(`app/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
+                        if (fs_1.default.existsSync(`app/${flawInfo.sourceFile}`)) {
                             console.log('File exists nothing to do');
-                        } else {
+                        }
+                        else {
                             console.log('File does not exist, copying file');
                             const str = flawInfo.sourceFile;
                             const lastSlashIndex = str.lastIndexOf('/');
                             const strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                            if (!fs.existsSync(`app/${strBeforeLastSlash}`)) {
+                            if (!fs_1.default.existsSync(`app/${strBeforeLastSlash}`)) {
                                 console.log('Destination directory does not exist let\'s create it');
-                                fs.mkdirSync(`app/${strBeforeLastSlash}`, { recursive: true });
+                                fs_1.default.mkdirSync(`app/${strBeforeLastSlash}`, { recursive: true });
                             }
-
-                            fs.copyFileSync(flawInfo.sourceFile, `app/${flawInfo.sourceFile}`);
+                            fs_1.default.copyFileSync(flawInfo.sourceFile, `app/${flawInfo.sourceFile}`);
                         }
-                    } else {
+                    }
+                    else {
                         console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not supported for ${options.language}`);
                     }
                 }
             }
         }
     }
-
-    //create the tar after all files are created and copied
-    // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
-    execSync('tar -czf app.tar.gz -C app .');
+    (0, child_process_1.execSync)('tar -czf app.tar.gz -C app .');
     console.log('Tar is created');
-
-    const projectID = await uploadBatch(credentials, options);
+    const projectID = await (0, requests_1.uploadBatch)(credentials, options);
     console.log('Project ID is: ' + projectID);
-
-    const checkBatchFixStatus = await checkFixBatch(credentials, projectID, options);
-
-
+    const checkBatchFixStatus = await (0, requests_1.checkFixBatch)(credentials, projectID, options);
     if (checkBatchFixStatus == 1) {
         console.log('Batch Fixs are ready to be reviewed');
-        const batchFixResults = await pullBatchFixResults(credentials, projectID, options);
-
+        const batchFixResults = await (0, requests_1.pullBatchFixResults)(credentials, projectID, options);
         if (batchFixResults == 0) {
             console.log('Something went wrong, no fixes generated');
-        } else {
+        }
+        else {
             console.log('Fixs pulled from batch fix');
-
             if (options.DEBUG) {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('run_batch.ts - runBatch()');
@@ -234,26 +179,15 @@ export async function runBatch(options: Options, credentials: Credentials): Prom
                 console.log(batchFixResults);
                 console.log('#######- DEBUG MODE -#######');
             }
-
-            //working with results
             const fixes = batchFixResults;
-            const outputPath = path.join(process.env.BUILD_ARTIFACTSTAGINGDIRECTORY || '$(Build.ArtifactStagingDirectory)', 'veracode-fixes.json');
-            fs.writeFileSync(outputPath, JSON.stringify(fixes, null, 2));
-
-            /*
-
-            if ( options.createPR == 'true' ){
-                console.log('Creating PRs is enabled')
-                const createPr = await createPR(batchFixResults, options, flawArray)
-            }
-            */
+            const outputPath = path_1.default.join(process.env.BUILD_ARTIFACTSTAGINGDIRECTORY || '$(Build.ArtifactStagingDirectory)', 'veracode-fixes.json');
+            fs_1.default.writeFileSync(outputPath, JSON.stringify(fixes, null, 2));
         }
-    } else {
+    }
+    else {
         console.log('Batch Fix failed');
     }
-
     console.log('Creating metadata artifact');
-    // Create metadata artifact with PR information (always create this)
     const metadata = {
         prId: process.env['SYSTEM_PULLREQUEST_PULLREQUESTID'] || null,
         sourceBranch: process.env['SYSTEM_PULLREQUEST_SOURCEBRANCH'] || null,
@@ -267,8 +201,6 @@ export async function runBatch(options: Options, credentials: Credentials): Prom
         buildDefinitionName: process.env['BUILD_DEFINITIONNAME'] || null,
         timestamp: new Date().toISOString()
     };
-    
-    // Debug logging for metadata creation
     if (options.DEBUG) {
         console.log('#######- DEBUG MODE -#######');
         console.log('run_batch.ts - runBatch() - Metadata creation');
@@ -287,13 +219,11 @@ export async function runBatch(options: Options, credentials: Credentials): Prom
         console.log('Metadata object:', metadata);
         console.log('#######- DEBUG MODE -#######');
     }
-    
-    const metadataPath = path.join(process.env.BUILD_ARTIFACTSTAGINGDIRECTORY || '$(Build.ArtifactStagingDirectory)', 'veracode-fix-metadata.json');
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+    const metadataPath = path_1.default.join(process.env.BUILD_ARTIFACTSTAGINGDIRECTORY || '$(Build.ArtifactStagingDirectory)', 'veracode-fix-metadata.json');
+    fs_1.default.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
     console.log('Metadata artifact created:', metadataPath);
-    
-    // Also create a copy in the current directory for debugging
-    const localMetadataPath = path.join(process.cwd(), 'veracode-fix-metadata.json');
-    fs.writeFileSync(localMetadataPath, JSON.stringify(metadata, null, 2));
+    const localMetadataPath = path_1.default.join(process.cwd(), 'veracode-fix-metadata.json');
+    fs_1.default.writeFileSync(localMetadataPath, JSON.stringify(metadata, null, 2));
     console.log('Local metadata copy created:', localMetadataPath);
 }
+exports.runBatch = runBatch;
