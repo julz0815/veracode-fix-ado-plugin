@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "veracode-fix-annotations",
     "name": "Veracode Fix Annotations",
-    "version": "1.0.160",
+    "version": "1.0.162",
     "publisher": "JulianTotzek-Hallhuber",
     "targets": [
         {

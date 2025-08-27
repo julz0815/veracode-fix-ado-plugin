@@ -1,6 +1,6 @@
 {
   "name": "veracode-fix-annotations",
-  "version": "1.0.160",
+  "version": "1.0.162",
   "description": "Azure DevOps extension for Veracode Fix API integration",
   "scripts": {
     "build-service": "tsc --project tsconfig.service.json",
@@ -10,7 +10,7 @@
     "dev": "echo 'No dev script needed'",
     "package": "tfx extension create",
     "increment-version": "node scripts/increment-version.js",
-    "publish": "npm run increment-version && npm run build && npm run package && tfx extension publish --token C2nAhFpim2XE3CM6Lp5VGOXOWwc78CoaC2nwYKmJ9lSndwPNAnB1JQQJ99BDACAAAAAAAAAAAAASAZDO16FZ"
+    "publish": "npm run increment-version && npm run build && npm run package && tfx extension publish --token YOUR_TOKEN_HERE"
   },
   "dependencies": {
     "axios": "^1.6.2",
