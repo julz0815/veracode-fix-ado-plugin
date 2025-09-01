@@ -120,9 +120,10 @@ const fetchFixesForPR = async (prId: string): Promise<FixesResponse | { results:
     const artifact = await buildClient.getArtifact(projectId, buildId, "veracode-fixes");
     console.log('Artifact:', artifact);
     
-    const downloadUrl = artifact.resource.downloadUrl;
-    const response = await fetch(downloadUrl);
-    const zipBlob = await response.blob();
+    // Use the Azure DevOps client to download the artifact instead of raw fetch
+    // This ensures proper authentication and avoids redirect issues
+    const artifactContent = await buildClient.getArtifactContentZip(projectId, buildId, "veracode-fixes");
+    const zipBlob = new Blob([artifactContent], { type: 'application/zip' });
     
     // Extract the ZIP file
     const zip = new JSZip();

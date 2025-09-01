@@ -12,6 +12,14 @@ const requests_1 = require("./requests");
 const child_process_1 = require("child_process");
 const rewritePath_1 = require("./rewritePath");
 async function runBatch(options, credentials) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const workFolder = `veracode-fix-${timestamp}`;
+    if (fs_1.default.existsSync(workFolder)) {
+        console.log(`Removing existing work folder: ${workFolder}`);
+        fs_1.default.rmSync(workFolder, { recursive: true, force: true });
+    }
+    fs_1.default.mkdirSync(workFolder, { recursive: true });
+    console.log(`Created work folder: ${workFolder}`);
     const jsonRead = fs_1.default.readFileSync(options.file, 'utf8');
     const jsonData = JSON.parse(jsonRead);
     const jsonFindings = jsonData.findings;
@@ -102,10 +110,10 @@ async function runBatch(options, credentials) {
                             }
                             const flawFoldername = `cwe-${flawInfo.CWEId}-line-${flawInfo.line}-issue-${flawInfo.issueId}`;
                             const flawFilename = `flaw_${flawInfo.issueId}.json`;
-                            console.log(`Writing flaw to: app/flaws/${flawFoldername}/${flawFilename}`);
-                            fs_1.default.mkdirSync(`app/flaws/${flawFoldername}`, { recursive: true });
-                            fs_1.default.writeFileSync(`app/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
-                            if (fs_1.default.existsSync(`app/${flawInfo.sourceFile}`)) {
+                            console.log(`Writing flaw to: ${workFolder}/flaws/${flawFoldername}/${flawFilename}`);
+                            fs_1.default.mkdirSync(`${workFolder}/flaws/${flawFoldername}`, { recursive: true });
+                            fs_1.default.writeFileSync(`${workFolder}/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
+                            if (fs_1.default.existsSync(`${workFolder}/${flawInfo.sourceFile}`)) {
                                 console.log('File exists nothing to do');
                             }
                             else {
@@ -113,11 +121,11 @@ async function runBatch(options, credentials) {
                                 const str = flawInfo.sourceFile;
                                 const lastSlashIndex = str.lastIndexOf('/');
                                 const strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                if (!fs_1.default.existsSync(`app/${strBeforeLastSlash}`)) {
+                                if (!fs_1.default.existsSync(`${workFolder}/${strBeforeLastSlash}`)) {
                                     console.log('Destination directory does not exist let\'s create it');
-                                    fs_1.default.mkdirSync(`app/${strBeforeLastSlash}`, { recursive: true });
+                                    fs_1.default.mkdirSync(`${workFolder}/${strBeforeLastSlash}`, { recursive: true });
                                 }
-                                fs_1.default.copyFileSync(flawInfo.sourceFile, `app/${flawInfo.sourceFile}`);
+                                fs_1.default.copyFileSync(flawInfo.sourceFile, `${workFolder}/${flawInfo.sourceFile}`);
                             }
                         }
                         else {
@@ -134,10 +142,10 @@ async function runBatch(options, credentials) {
                         const flawInfo = await (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                         const flawFoldername = `cwe-${flawInfo.CWEId}-line-${flawInfo.line}-issue-${flawInfo.issueId}`;
                         const flawFilename = `flaw_${flawInfo.issueId}.json`;
-                        console.log(`Writing flaw to: app/flaws/${flawFoldername}/${flawFilename}`);
-                        fs_1.default.mkdirSync(`app/flaws/${flawFoldername}`, { recursive: true });
-                        fs_1.default.writeFileSync(`app/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
-                        if (fs_1.default.existsSync(`app/${flawInfo.sourceFile}`)) {
+                        console.log(`Writing flaw to: ${workFolder}/flaws/${flawFoldername}/${flawFilename}`);
+                        fs_1.default.mkdirSync(`${workFolder}/flaws/${flawFoldername}`, { recursive: true });
+                        fs_1.default.writeFileSync(`${workFolder}/flaws/${flawFoldername}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
+                        if (fs_1.default.existsSync(`${workFolder}/${flawInfo.sourceFile}`)) {
                             console.log('File exists nothing to do');
                         }
                         else {
@@ -145,11 +153,11 @@ async function runBatch(options, credentials) {
                             const str = flawInfo.sourceFile;
                             const lastSlashIndex = str.lastIndexOf('/');
                             const strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                            if (!fs_1.default.existsSync(`app/${strBeforeLastSlash}`)) {
+                            if (!fs_1.default.existsSync(`${workFolder}/${strBeforeLastSlash}`)) {
                                 console.log('Destination directory does not exist let\'s create it');
-                                fs_1.default.mkdirSync(`app/${strBeforeLastSlash}`, { recursive: true });
+                                fs_1.default.mkdirSync(`${workFolder}/${strBeforeLastSlash}`, { recursive: true });
                             }
-                            fs_1.default.copyFileSync(flawInfo.sourceFile, `app/${flawInfo.sourceFile}`);
+                            fs_1.default.copyFileSync(flawInfo.sourceFile, `${workFolder}/${flawInfo.sourceFile}`);
                         }
                     }
                     else {
@@ -159,8 +167,10 @@ async function runBatch(options, credentials) {
             }
         }
     }
-    (0, child_process_1.execSync)('tar -czf app.tar.gz -C app .');
+    (0, child_process_1.execSync)(`tar -czf app.tar.gz -C ${workFolder} .`);
     console.log('Tar is created');
+    console.log(`Cleaning up work folder: ${workFolder}`);
+    fs_1.default.rmSync(workFolder, { recursive: true, force: true });
     const projectID = await (0, requests_1.uploadBatch)(credentials, options);
     console.log('Project ID is: ' + projectID);
     const checkBatchFixStatus = await (0, requests_1.checkFixBatch)(credentials, projectID, options);

@@ -387,9 +387,10 @@ const fetchFixesForPipeline = async (): Promise<FixesResponse | { results: {}; r
     const artifact = await buildClient.getArtifact(projectId, buildId, "veracode-fixes");
     console.log('Artifact:', artifact);
     
-    const downloadUrl = artifact.resource.downloadUrl;
-    const response = await fetch(downloadUrl);
-    const zipBlob = await response.blob();
+    // Use the Azure DevOps client to download the artifact instead of raw fetch
+    // This ensures proper authentication and avoids redirect issues
+    const artifactContent = await buildClient.getArtifactContentZip(projectId, buildId, "veracode-fixes");
+    const zipBlob = new Blob([artifactContent], { type: 'application/zip' });
     
     // Extract the ZIP file
     const zip = new JSZip();
@@ -907,7 +908,7 @@ class VeracodeFixPipelineTab extends React.Component<{}, {
           </div>
         );
       }
-      return <p>Fixes arw being loaded ....</p>;
+      return <p>Fixes are being loaded ....</p>;
     }
 
     // Helper to slugify file names for branch names (max 20 chars, safe chars only)
